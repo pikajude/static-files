@@ -164,9 +164,13 @@ pub struct StaticFile {
 
 impl StaticFile {
     pub fn as_literal(self) -> String {
-        format!("StaticFile {{ name: String::from({:?}), bytes: {} }}",
+        format!("StaticFile {{ name: String::from({:?}), bytes: {}, mime: ContentType::new({:?}, \
+                 {:?}), etag: String::from({:?}) }}",
                 self.name,
-                self.bytes.as_literal())
+                self.bytes.as_literal(),
+                self.mime.ttype.to_string(),
+                self.mime.subtype.to_string(),
+                self.etag)
     }
 }
 
@@ -175,7 +179,15 @@ pub static FILES: LocalStorage<HashMap<String, Box<Fn() -> StaticFile + Send>>> 
 
 pub fn generate_file(v: Vec<File>, f: &mut fs::File) -> Result<(), Error> {
     f.write_all(b"
-    fn load_files() {
+    #![allow(unused_imports)]
+    use generator::FILES;
+    use std::collections::HashMap;
+    use generator::StaticFile;
+    use generator::File;
+    use rocket::http::ContentType;
+    use generator::ByteString;
+
+    pub fn load_files() {
       FILES.set(|| {
         let mut m: HashMap<String, Box<Fn() -> StaticFile + Send>> = HashMap::new();
 

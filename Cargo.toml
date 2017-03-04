@@ -8,5 +8,19 @@ generator = { path = "generator" }
 
 [dependencies]
 generator = { path = "generator" }
+mod_path = { path = "mod_path" }
+
+r2d2 = "*"
+r2d2_postgres = "*"
+postgres = { version = "*", features = ["with-chrono"] }
+
+chrono = "*"
+
 rocket = "0.2.2"
 rocket_codegen = "0.2.2"
+
+maud = "*"
+maud_macros = "*"
+
+pulldown-cmark = "*"
+syntect = "*"
