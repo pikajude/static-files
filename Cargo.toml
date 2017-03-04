@@ -1,0 +1,12 @@
+[package]
+name = "static-files"
+version = "0.1.0"
+authors = ["Jude Taylor <me@jude.bio>"]
+
+[build-dependencies]
+generator = { path = "generator" }
+
+[dependencies]
+generator = { path = "generator" }
+rocket = "0.2.2"
+rocket_codegen = "0.2.2"

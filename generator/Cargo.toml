@@ -1,0 +1,9 @@
+[package]
+name = "generator"
+version = "0.1.0"
+authors = ["Jude Taylor <me@jude.bio>"]
+
+[dependencies]
+state = { version = "0.2", features = ["tls"] }
+rocket = "*"
+rust-crypto = "*"
