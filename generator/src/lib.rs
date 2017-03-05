@@ -73,6 +73,7 @@ impl File {
     }
 
     fn load_sass(name: String, pb: &'static str) -> StaticFile {
+        #![allow(unused_mut)]
         println!("cargo:warning=Loading sass file: {:?}", pb);
 
         let mut args = vec!["--scss",

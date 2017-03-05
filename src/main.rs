@@ -1,20 +1,25 @@
+#![feature(const_fn)]
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 #![plugin(maud_macros)]
 #![plugin(mod_path)]
 
-extern crate rocket;
-extern crate generator;
-extern crate syntect;
-extern crate pulldown_cmark;
-extern crate maud;
-extern crate r2d2_postgres;
-extern crate r2d2;
 extern crate chrono;
+extern crate generator;
+extern crate maud;
 extern crate postgres;
+extern crate pulldown_cmark;
+extern crate r2d2;
+extern crate r2d2_postgres;
+extern crate rocket;
+extern crate rustc_serialize;
+extern crate sodiumoxide;
+extern crate state;
+extern crate syntect;
 
 use generator::{FILES, StaticFile};
 use std::path::PathBuf;
+use rocket::http::Cookie;
 use rocket::response::Responder;
 use rocket::response::content::HTML;
 use rocket::State;
@@ -23,15 +28,18 @@ use rocket::response::Response;
 use rocket::request::Request;
 use rocket::outcome::Outcome;
 use rocket::http::Status;
+use rocket::http::Cookies;
 use std::io::Cursor;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 
 mod pages;
 mod db;
 mod highlighting;
+mod session;
 
 use db::Entry;
 use db::Pool;
+use session::Session;
 
 struct IfNoneMatch(String);
 struct StaticResponse(StaticFile);
@@ -73,13 +81,14 @@ impl<'a, 'r> FromRequest<'a, 'r> for IfNoneMatch {
 }
 
 #[get("/")]
-fn home(db: State<Pool>) -> HTML<String> {
+fn home(db: State<Pool>, s: Session, cj: &Cookies) -> HTML<String> {
     let conn = db.get().unwrap();
     let entries: Vec<Entry> = conn.query("SELECT * FROM essay ORDER BY created_at DESC", &[])
         .unwrap()
         .iter()
         .map(|r| Entry::from_row(r))
         .collect();
+    cj.add(Cookie::new("_SESSION", s.to_cookie()));
     pages::home::page(entries)
 }
 
@@ -112,7 +121,9 @@ fn main() {
     mod_path! generated { concat!(env!("OUT_DIR"), "/generated.rs") }
     generated::load_files();
 
-    let manager = PostgresConnectionManager::new("postgres://jude@localhost", TlsMode::None)
+    session::load_keys();
+
+    let manager = PostgresConnectionManager::new("postgres://pikajude@localhost", TlsMode::None)
         .unwrap();
     let config = r2d2::Config::default();
     let pool = r2d2::Pool::new(config, manager).unwrap();

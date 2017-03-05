@@ -10,9 +10,14 @@ generator = { path = "generator" }
 generator = { path = "generator" }
 mod_path = { path = "mod_path" }
 
+state = { version = "0.2", features = ["tls"] }
+
 r2d2 = "*"
 r2d2_postgres = "*"
 postgres = { version = "*", features = ["with-chrono"] }
+
+sodiumoxide = "*"
+rustc-serialize = "*"
 
 chrono = "*"
 
