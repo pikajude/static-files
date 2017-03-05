@@ -11,6 +11,7 @@ generator = { path = "generator" }
 mod_path = { path = "mod_path" }
 
 state = { version = "0.2", features = ["tls"] }
+rand = "*"
 
 r2d2 = "*"
 r2d2_postgres = "*"

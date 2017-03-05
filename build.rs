@@ -17,6 +17,8 @@ fn create() -> Result<(), Error> {
                        Plain("img/linkedin@2x.png", "static/img/linkedin@2x.png"),
                        Plain("img/otter.png", "static/img/otter.png"),
                        Plain("img/otter@2x.png", "static/img/otter@2x.png"),
+                       Plain("img/newpost.png", "static/img/newpost.png"),
+                       Plain("img/newpost@2x.png", "static/img/newpost@2x.png"),
                        Sass("css/all.css", "static/css/all.scss")],
                   &mut f)
 }

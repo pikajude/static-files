@@ -5,6 +5,7 @@
 #![plugin(mod_path)]
 
 extern crate chrono;
+extern crate rand;
 extern crate generator;
 extern crate maud;
 extern crate postgres;
@@ -25,6 +26,7 @@ use rocket::response::content::HTML;
 use rocket::State;
 use rocket::request::FromRequest;
 use rocket::response::Response;
+use pages::User;
 use rocket::request::Request;
 use rocket::outcome::Outcome;
 use rocket::http::Status;
@@ -81,15 +83,16 @@ impl<'a, 'r> FromRequest<'a, 'r> for IfNoneMatch {
 }
 
 #[get("/")]
-fn home(db: State<Pool>, s: Session, cj: &Cookies) -> HTML<String> {
+fn home(db: State<Pool>, s: Session) -> HTML<String> {
     let conn = db.get().unwrap();
+    let user = s.user();
     let entries: Vec<Entry> = conn.query("SELECT * FROM essay ORDER BY created_at DESC", &[])
         .unwrap()
         .iter()
         .map(|r| Entry::from_row(r))
         .collect();
-    cj.add(Cookie::new("_SESSION", s.to_cookie()));
-    pages::home::page(entries)
+
+    pages::home::page(user, entries)
 }
 
 #[get("/r/<slug>")]
@@ -117,16 +120,47 @@ fn get_static(path: PathBuf, inm: Option<IfNoneMatch>) -> Option<Cached<StaticRe
     })
 }
 
+#[get("/login")]
+fn login(s: Session) -> Result<HTML<String>, rocket::response::Redirect> {
+    if let Some(_) = s.get("user") {
+        return Err(rocket::response::Redirect::to("/"));
+    }
+
+    Ok(pages::default_layout(pages::Page {
+        title: Some(String::from("Log in")),
+        user: None,
+        body: html! {
+      article.bubble {
+        h3.form-title "Log in"
+        form role="form" method="post" action="/login" {
+          div.row {
+            div class="large-6 columns" {
+              "Username field"
+            }
+
+            div class="large-6 columns" {
+              "Password field"
+            }
+          }
+          button.button.tiny type="submit" "Try it"
+        }
+      }
+    },
+    }))
+}
+
 fn main() {
     mod_path! generated { concat!(env!("OUT_DIR"), "/generated.rs") }
     generated::load_files();
 
     session::load_keys();
 
-    let manager = PostgresConnectionManager::new("postgres://pikajude@localhost", TlsMode::None)
+    let username = env!("PGUSER");
+    let manager = PostgresConnectionManager::new(format!("postgres://{}@localhost", username),
+                                                 TlsMode::None)
         .unwrap();
     let config = r2d2::Config::default();
     let pool = r2d2::Pool::new(config, manager).unwrap();
 
-    rocket::ignite().manage(pool).mount("/", routes![home, get_static, one]).launch()
+    rocket::ignite().manage(pool).mount("/", routes![home, get_static, one, login]).launch()
 }

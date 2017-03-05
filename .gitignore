@@ -3,3 +3,4 @@ bower_components
 target/
 **/*.rs.bk
 Cargo.lock
+secret.key

@@ -2,9 +2,10 @@ use pages::*;
 use rocket::response::content::HTML;
 use db::Entry;
 
-pub fn page(es: Vec<Entry>) -> HTML<String> {
+pub fn page(u: Option<User>, es: Vec<Entry>) -> HTML<String> {
     default_layout(Page {
         title: None,
+        user: u,
         body: html! {
       article.bubble.last-bubble {
         h5.site-title "I’m Jude, a functional programmer with a colorful head."
