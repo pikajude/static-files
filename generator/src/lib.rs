@@ -53,6 +53,7 @@ impl File {
     }
 
     fn load_plain(name: String, pb: &'static str) -> StaticFile {
+        #[cfg(not(debug_assertions))]
         println!("cargo:warning=Loading plain file: {:?}", pb);
         let mut s = Vec::new();
 

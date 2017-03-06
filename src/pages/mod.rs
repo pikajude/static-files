@@ -1,5 +1,5 @@
-use maud::PreEscaped;
 use maud::DOCTYPE;
+use maud::PreEscaped;
 use rocket::response::content::HTML;
 
 pub mod home;

@@ -1,26 +1,26 @@
-use sodiumoxide::crypto::secretbox;
-use std::collections::HashMap;
-use rocket::request::FromRequest;
-use std::fs::File;
 use rand::Rng;
-use std::path::Path;
-use rocket::http::Cookies;
-use std::io::Read;
-use sodiumoxide::crypto::secretbox::{Nonce, Key};
-use rocket::response::Response;
-use rustc_serialize::base64;
-use rocket::http::Cookie;
-use rustc_serialize::json;
-use std::io::Write;
 use rand::thread_rng;
-use rocket::response::Responder;
-use rustc_serialize::base64::{FromBase64, ToBase64};
-use state::LocalStorage;
-use rocket::http::Status;
-use rocket::request::Request;
 use rocket::Outcome;
+use rocket::http::Cookie;
+use rocket::http::Cookies;
+use rocket::http::Status;
+use rocket::request::FromRequest;
+use rocket::request::Request;
+use rustc_serialize::base64::{FromBase64, ToBase64};
+use rustc_serialize::base64;
+use rustc_serialize::json;
+use sodiumoxide::crypto::secretbox::{Nonce, Key};
+use sodiumoxide::crypto::secretbox;
+use state::LocalStorage;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::Read;
+use std::io::Write;
+use std::path::Path;
 
 use pages;
+
+const COOKIE_NAME: &'static str = "_SESSION";
 
 static _KN: LocalStorage<(Key, Nonce)> = LocalStorage::new();
 
@@ -39,16 +39,13 @@ pub fn load_keys() {
         }
 
         let mut v = Vec::new();
-        {
-            let mut f = File::open(key_path).expect("Could not open key file");
-            f.read_to_end(&mut v).expect("Unable to read key file");
-        }
+        let mut f = File::open(key_path).expect("Could not open key file");
+        f.read_to_end(&mut v).expect("Unable to read key file");
         v
     }
 
-    fn bytes_to_pair(mut bytes: Vec<u8>) -> (Key, Nonce) {
-        assert!(bytes.len() == 56, "secret keyfile wrong length");
-        let mut key: &mut Vec<u8> = bytes.as_mut();
+    fn bytes_to_pair(mut key: Vec<u8>) -> (Key, Nonce) {
+        assert!(key.len() == 56, "secret keyfile wrong length");
         let nonce: Vec<u8> = key.split_off(32);
         (Key::from_slice(key.as_slice()).expect("Key wrong length"),
          Nonce::from_slice(nonce.as_slice()).expect("Nonce wrong length"))
@@ -80,7 +77,7 @@ impl<'a> Session<'a> {
     }
 
     pub fn user(&self) -> Option<pages::User> {
-      self.get_string("user").map(|u| pages::User(u))
+        self.get_string("user").map(|u| pages::User(u))
     }
 
     pub fn insert<R>(&mut self, key: String, value: R) -> Option<Vec<u8>>
@@ -115,9 +112,7 @@ impl<'a> Session<'a> {
 
 impl<'a> Drop for Session<'a> {
     fn drop(&mut self) {
-        if self._store.len() > 0 {
-            self._cookiejar.add(Cookie::new("_SESSION", self.to_cookie()));
-        }
+        self._cookiejar.add(Cookie::new(COOKIE_NAME, self.to_cookie()));
     }
 }
 
@@ -126,7 +121,7 @@ impl<'r, 'a> FromRequest<'a, 'r> for Session<'a> {
 
     fn from_request(req: &'a Request<'r>) -> Outcome<Self, (Status, ()), ()> {
         let cookiejar = req.cookies();
-        Outcome::Success(cookiejar.find("_SESSION")
+        Outcome::Success(cookiejar.find(COOKIE_NAME)
             .and_then(|cookie| Session::from_cookie(cookiejar, String::from(cookie.value())))
             .unwrap_or(Session::new(cookiejar)))
     }

@@ -1,7 +1,7 @@
 use chrono;
+use postgres;
 use r2d2;
 use r2d2_postgres::PostgresConnectionManager;
-use postgres;
 
 pub type Pool = r2d2::Pool<PostgresConnectionManager>;
 

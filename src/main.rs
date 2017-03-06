@@ -19,20 +19,17 @@ extern crate state;
 extern crate syntect;
 
 use generator::{FILES, StaticFile};
-use std::path::PathBuf;
-use rocket::http::Cookie;
-use rocket::response::Responder;
-use rocket::response::content::HTML;
-use rocket::State;
-use rocket::request::FromRequest;
-use rocket::response::Response;
-use pages::User;
-use rocket::request::Request;
-use rocket::outcome::Outcome;
-use rocket::http::Status;
-use rocket::http::Cookies;
-use std::io::Cursor;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
+use rocket::State;
+use rocket::http::Status;
+use rocket::outcome::Outcome;
+use rocket::request::FromRequest;
+use rocket::request::Request;
+use rocket::response::Responder;
+use rocket::response::Response;
+use rocket::response::content::HTML;
+use std::io::Cursor;
+use std::path::PathBuf;
 
 mod pages;
 mod db;
@@ -96,11 +93,11 @@ fn home(db: State<Pool>, s: Session) -> HTML<String> {
 }
 
 #[get("/r/<slug>")]
-fn one(db: State<Pool>, slug: String) -> Option<HTML<String>> {
+fn one(db: State<Pool>, slug: String, s: Session) -> Option<HTML<String>> {
     let conn = db.get().unwrap();
     let rows = conn.query("SELECT * FROM essay WHERE slug = $1", &[&slug]).unwrap();
     match rows.len() {
-        1 => Some(pages::one::page(Entry::from_row(rows.get(0)))),
+        1 => Some(pages::one::page(s.user(), Entry::from_row(rows.get(0)))),
         _ => None,
     }
 }
@@ -118,6 +115,14 @@ fn get_static(path: PathBuf, inm: Option<IfNoneMatch>) -> Option<Cached<StaticRe
 
         Cached::Uncached(StaticResponse(sf))
     })
+}
+
+#[get("/s/<path..>?<_query>")]
+fn static_qs(path: PathBuf,
+             _query: &str,
+             inm: Option<IfNoneMatch>)
+             -> Option<Cached<StaticResponse>> {
+    get_static(path, inm)
 }
 
 #[get("/login")]
@@ -162,5 +167,8 @@ fn main() {
     let config = r2d2::Config::default();
     let pool = r2d2::Pool::new(config, manager).unwrap();
 
-    rocket::ignite().manage(pool).mount("/", routes![home, get_static, one, login]).launch()
+    rocket::ignite()
+        .manage(pool)
+        .mount("/", routes![home, get_static, static_qs, one, login])
+        .launch()
 }

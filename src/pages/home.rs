@@ -1,6 +1,6 @@
+use db::Entry;
 use pages::*;
 use rocket::response::content::HTML;
-use db::Entry;
 
 pub fn page(u: Option<User>, es: Vec<Entry>) -> HTML<String> {
     default_layout(Page {

@@ -1,8 +1,8 @@
-use std::borrow::Cow;
-use syntect::parsing::{SyntaxSet, ParseState};
-use syntect::html::{ClassStyle, tokens_to_classed_html};
-use pulldown_cmark::html::push_html;
 use pulldown_cmark::*;
+use pulldown_cmark::html::push_html;
+use std::borrow::Cow;
+use syntect::html::{ClassStyle, tokens_to_classed_html};
+use syntect::parsing::{SyntaxSet, ParseState};
 
 pub fn markdown(text: String) -> String {
     let mut in_block = false;

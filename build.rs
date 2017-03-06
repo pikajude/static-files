@@ -19,6 +19,9 @@ fn create() -> Result<(), Error> {
                        Plain("img/otter@2x.png", "static/img/otter@2x.png"),
                        Plain("img/newpost.png", "static/img/newpost.png"),
                        Plain("img/newpost@2x.png", "static/img/newpost@2x.png"),
+                       Plain("fonts/fontawesome-webfont.woff2", "bower_components/font-awesome/fonts/fontawesome-webfont.woff2"),
+                       Plain("fonts/fontawesome-webfont.woff", "bower_components/font-awesome/fonts/fontawesome-webfont.woff"),
+                       Plain("fonts/fontawesome-webfont.ttf", "bower_components/font-awesome/fonts/fontawesome-webfont.ttf"),
                        Sass("css/all.css", "static/css/all.scss")],
                   &mut f)
 }
