@@ -3,6 +3,7 @@
 #![plugin(rocket_codegen)]
 #![plugin(maud_macros)]
 #![plugin(mod_path)]
+#![allow(non_snake_case)]
 
 extern crate chrono;
 extern crate rand;

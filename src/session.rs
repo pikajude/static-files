@@ -80,6 +80,7 @@ impl<'a> Session<'a> {
         self.get_string("user").map(|u| pages::User(u))
     }
 
+    #[allow(dead_code)]
     pub fn insert<R>(&mut self, key: String, value: R) -> Option<Vec<u8>>
         where R: Into<Vec<u8>>
     {
