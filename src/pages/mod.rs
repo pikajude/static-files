@@ -4,6 +4,7 @@ use rocket::response::content::HTML;
 
 pub mod home;
 pub mod one;
+pub mod login;
 
 pub struct User(pub String);
 

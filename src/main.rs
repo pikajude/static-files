@@ -1,4 +1,5 @@
 #![feature(const_fn)]
+#![feature(custom_derive)]
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 #![plugin(maud_macros)]
@@ -21,6 +22,7 @@ extern crate syntect;
 
 use generator::{FILES, StaticFile};
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
+use rocket::request::Form;
 use rocket::State;
 use rocket::http::Status;
 use rocket::outcome::Outcome;
@@ -36,6 +38,7 @@ mod pages;
 mod db;
 mod highlighting;
 mod session;
+mod auth;
 
 use db::Entry;
 use db::Pool;
@@ -126,33 +129,27 @@ fn static_qs(path: PathBuf,
     get_static(path, inm)
 }
 
-#[get("/login")]
+#[get("/in")]
 fn login(s: Session) -> Result<HTML<String>, rocket::response::Redirect> {
     if let Some(_) = s.get("user") {
         return Err(rocket::response::Redirect::to("/"));
     }
 
-    Ok(pages::default_layout(pages::Page {
-        title: Some(String::from("Log in")),
-        user: None,
-        body: html! {
-      article.bubble {
-        h3.form-title "Log in"
-        form role="form" method="post" action="/login" {
-          div.row {
-            div class="large-6 columns" {
-              "Username field"
-            }
+    Ok(pages::login::page(None))
+}
 
-            div class="large-6 columns" {
-              "Password field"
-            }
-          }
-          button.button.tiny type="submit" "Try it"
-        }
-      }
-    },
-    }))
+#[derive(FromForm)]
+struct Password { username: String, password: String }
+
+#[post("/in", data = "<password>")]
+fn post_login(mut s: Session, password: Form<Password>) -> Result<HTML<String>, rocket::response::Redirect> {
+    let pw = password.get();
+    if auth::verify(&pw.password) {
+        s.set_user(pages::User(pw.username.clone()));
+        return Err(rocket::response::Redirect::to("/"));
+    }
+
+    Ok(pages::login::page(Some((pw.username.clone(), "Invalid password"))))
 }
 
 fn main() {
@@ -170,6 +167,6 @@ fn main() {
 
     rocket::ignite()
         .manage(pool)
-        .mount("/", routes![home, get_static, static_qs, one, login])
+        .mount("/", routes![home, get_static, static_qs, one, login, post_login])
         .launch()
 }
