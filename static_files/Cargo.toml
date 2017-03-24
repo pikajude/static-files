@@ -1,5 +1,5 @@
 [package]
-name = "generator"
+name = "static_files"
 version = "0.1.0"
 authors = ["Jude Taylor <me@jude.bio>"]
 
@@ -7,3 +7,4 @@ authors = ["Jude Taylor <me@jude.bio>"]
 state = { version = "0.2", features = ["tls"] }
 rocket = "*"
 rust-crypto = "*"
+quote = "0.3"

@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["Jude Taylor <me@jude.bio>"]
 
 [build-dependencies]
-generator = { path = "generator" }
+static_files = { path = "static_files" }
 
 [dependencies]
-generator = { path = "generator" }
+static_files = { path = "static_files" }
 mod_path = { path = "mod_path" }
 
 state = { version = "0.2", features = ["tls"] }

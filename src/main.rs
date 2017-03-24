@@ -8,7 +8,7 @@
 
 extern crate chrono;
 extern crate rand;
-extern crate generator;
+extern crate static_files;
 extern crate maud;
 extern crate postgres;
 extern crate pulldown_cmark;
@@ -20,18 +20,11 @@ extern crate sodiumoxide;
 extern crate state;
 extern crate syntect;
 
-use generator::{FILES, StaticFile};
+use static_files::{lookup_file, StaticResponse, Cached, IfNoneMatch};
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use rocket::request::Form;
 use rocket::State;
-use rocket::http::Status;
-use rocket::outcome::Outcome;
-use rocket::request::FromRequest;
-use rocket::request::Request;
-use rocket::response::Responder;
-use rocket::response::Response;
 use rocket::response::content::HTML;
-use std::io::Cursor;
 use std::path::PathBuf;
 
 mod pages;
@@ -43,45 +36,6 @@ mod auth;
 use db::Entry;
 use db::Pool;
 use session::Session;
-
-struct IfNoneMatch(String);
-struct StaticResponse(StaticFile);
-enum Cached<T> {
-    Cached,
-    Uncached(T),
-}
-
-impl<'r> Responder<'r> for StaticResponse {
-    fn respond(self) -> Result<Response<'r>, Status> {
-        Response::build()
-            .header(self.0.mime)
-            .raw_header("Etag", self.0.etag)
-            .sized_body(Cursor::new(self.0.bytes))
-            .ok()
-    }
-}
-
-impl<'r, T> Responder<'r> for Cached<T>
-    where T: Responder<'r>
-{
-    fn respond(self) -> Result<Response<'r>, Status> {
-        match self {
-            Cached::Cached => Response::build().status(Status::NotModified).ok(),
-            Cached::Uncached(t) => t.respond(),
-        }
-    }
-}
-
-impl<'a, 'r> FromRequest<'a, 'r> for IfNoneMatch {
-    type Error = ();
-
-    fn from_request(request: &'a Request<'r>) -> Outcome<Self, (Status, ()), Self::Error> {
-        match request.headers().get_one("If-None-Match") {
-            Some(inm) => Outcome::Success(IfNoneMatch(String::from(inm))),
-            None => Outcome::Forward(()),
-        }
-    }
-}
 
 #[get("/")]
 fn home(db: State<Pool>, s: Session) -> HTML<String> {
@@ -113,17 +67,7 @@ fn get_favicon(inm: Option<IfNoneMatch>) -> Option<Cached<StaticResponse>> {
 
 #[get("/s/<path..>")]
 fn get_static(path: PathBuf, inm: Option<IfNoneMatch>) -> Option<Cached<StaticResponse>> {
-    FILES.get().get(&String::from(path.to_str().unwrap())).map(|x| {
-        let sf = x();
-
-        if let Some(IfNoneMatch(ref i)) = inm {
-            if &sf.etag == i {
-                return Cached::Cached;
-            }
-        }
-
-        Cached::Uncached(StaticResponse(sf))
-    })
+  lookup_file(path, inm)
 }
 
 #[get("/s/<path..>?<_query>")]
