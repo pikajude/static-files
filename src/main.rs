@@ -106,6 +106,11 @@ fn one(db: State<Pool>, slug: String, s: Session) -> Option<HTML<String>> {
     }
 }
 
+#[get("/favicon.ico")]
+fn get_favicon(inm: Option<IfNoneMatch>) -> Option<Cached<StaticResponse>> {
+    get_static(PathBuf::from("favicon.ico"), inm)
+}
+
 #[get("/s/<path..>")]
 fn get_static(path: PathBuf, inm: Option<IfNoneMatch>) -> Option<Cached<StaticResponse>> {
     FILES.get().get(&String::from(path.to_str().unwrap())).map(|x| {
@@ -167,6 +172,6 @@ fn main() {
 
     rocket::ignite()
         .manage(pool)
-        .mount("/", routes![home, get_static, static_qs, one, login, post_login])
+        .mount("/", routes![home, get_favicon, get_static, static_qs, one, login, post_login])
         .launch()
 }

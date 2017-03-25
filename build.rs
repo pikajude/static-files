@@ -10,7 +10,7 @@ fn create() -> Result<(), Error> {
     let out = env::var("OUT_DIR").unwrap();
     let mut f = File::create(out + "/generated.rs")?;
 
-    generate_file(vec![Plain("Cargo.toml", "Cargo.toml"),
+    generate_file(vec![Plain("favicon.ico", "static/img/favicon.ico"),
                        Plain("img/github.png", "static/img/github.png"),
                        Plain("img/github@2x.png", "static/img/github@2x.png"),
                        Plain("img/linkedin.png", "static/img/linkedin.png"),

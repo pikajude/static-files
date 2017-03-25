@@ -5,6 +5,7 @@ extern crate rocket;
 extern crate crypto;
 
 use crypto::md5::Md5;
+use std::fmt::Display;
 use rocket::http::ContentType;
 use state::LocalStorage;
 use std::collections::HashMap;
@@ -13,6 +14,7 @@ use crypto::digest::Digest;
 use std::path::PathBuf;
 use std::process::Command;
 use std::io::{Write, Read};
+use std::ffi::OsStr;
 use std::process::Stdio;
 use std::fs;
 
@@ -85,14 +87,6 @@ impl File {
         #[cfg(not(debug_assertions))]
         args.append(&mut vec!["--style", "compact"]);
 
-        let mut child = Command::new("sass")
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .args(&args)
-            .spawn()
-            .expect("failed to execute process");
-
         let mut contents = String::new();
         contents.push_str("$static_prefix: '/s/';\n");
         fs::File::open(pb)
@@ -100,25 +94,18 @@ impl File {
             .read_to_string(&mut contents)
             .expect("read from file failed");
 
-        child.stdin
-            .as_mut()
-            .expect("Stdin not mut")
-            .write_all(contents.as_bytes())
-            .expect("Write failed");
+        let bytes = run_subcommand("sass", &args, contents.as_bytes());
 
-        let output = child.wait_with_output().expect("Child didn't wait");
+        #[cfg(not(debug_assertions))]
+        let bytes = run_subcommand("cssnano", &[], bytes.as_slice());
 
-        if output.status.success() {
-            let o1 = output.stdout.clone();
-            StaticFile {
-                name: name,
-                bytes: ByteString::Dynamic(output.stdout),
-                mime: ContentType::CSS,
-                etag: Self::mk_etag(o1),
-            }
-        } else {
-            panic!("sass failed: {}",
-                   String::from_utf8_lossy(output.stderr.as_slice()))
+        let b1 = bytes.clone();
+
+        StaticFile {
+            name: name,
+            bytes: ByteString::Dynamic(bytes),
+            mime: ContentType::CSS,
+            etag: Self::mk_etag(b1),
         }
     }
 
@@ -137,6 +124,25 @@ impl File {
             Sass(p, f) => format!("File::Sass({:?}, {:?})", p, f),
             Plain(p, f) => format!("File::Plain({:?}, {:?})", p, f),
         }
+    }
+}
+
+fn run_subcommand<S: AsRef<OsStr> + Display + Copy>(cmd: S, args: &[S], stdin: &[u8]) -> Vec<u8> {
+    let mut child = Command::new(cmd)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .args(args)
+        .spawn()
+        .expect("failed to execute process");
+
+    child.stdin.as_mut().expect("Stdin not mut").write_all(stdin).expect("Write failed");
+
+    let output = child.wait_with_output().expect("Child didn't wait");
+    if output.status.success() {
+        output.stdout
+    } else {
+        panic!("{} failed: {}", cmd, String::from_utf8_lossy(output.stderr.as_slice()))
     }
 }
 
