@@ -1,5 +1,7 @@
 use StaticFile;
 use FILES;
+use FileStorage;
+use state::LocalStorage;
 use rocket::response::Responder;
 use rocket::request::FromRequest;
 use rocket::request::Request;
@@ -56,7 +58,14 @@ impl<'a, 'r> FromRequest<'a, 'r> for IfNoneMatch {
 /// `Cached::Cached` will be returned. Note that this only happens in production, as
 /// computing etags in dev wastes time.
 pub fn lookup_file(path: PathBuf, inm: Option<IfNoneMatch>) -> Option<Cached<StaticResponse>> {
-    FILES.get().get(&String::from(path.to_str().unwrap())).map(|x| {
+    lookup_file_with(&FILES, path, inm)
+}
+
+pub fn lookup_file_with(store: &LocalStorage<FileStorage>,
+                        path: PathBuf,
+                        inm: Option<IfNoneMatch>)
+                        -> Option<Cached<StaticResponse>> {
+    store.get().get(&String::from(path.to_str().unwrap())).map(|x| {
         let sf = x();
 
         if let Some(IfNoneMatch(ref i)) = inm {
